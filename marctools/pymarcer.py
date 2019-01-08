@@ -1,0 +1,43 @@
+import json
+
+def make_json(jmarc):
+    pymarc = {}
+    pymarc['_id'] = jmarc['_id']
+    pymarc['leader'] = jmarc['leader']
+    pymarc['fields'] = []
+
+    # jmarc doesn't seem to include a 001, so let's assign it if it doesn't already exist
+    pymarc['fields'].append({'001': pymarc['_id']})
+
+    # Process the controlfield entries
+    for cf in jmarc['controlfield']:
+        tag = cf['tag']
+        val = cf['value']
+        this_field = {}
+        this_field[tag] = val
+        pymarc['fields'].append(this_field)
+
+    # Process datafield entries
+    for df in jmarc['datafield']:
+        tag = df['tag']
+        ind1 = df['ind1']
+        ind2 = df['ind2']
+        this_field = {
+            tag: {
+                'subfields': [],
+                'ind1': ind1,
+                'ind2': ind2
+            }
+        }
+        # Now process subfield entries
+        for sf in df['subfield']:
+            sf_code = sf['code']
+            sf_val = sf['value']
+            this_subfield = {}
+            this_subfield[sf_code] = sf_val
+            this_field[tag]['subfields'].append(this_subfield)
+        pymarc['fields'].append(this_field)
+
+    # Let's see if we can make json, then read that into pymarc
+    pymarc_json = json.dumps(pymarc)
+    return pymarc_json
