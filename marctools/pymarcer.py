@@ -2,12 +2,12 @@ import json
 
 def make_json(jmarc):
     pymarc = {}
-    pymarc['_id'] = jmarc['_id']
+    # The id field is unnecessary in a pymarc record
+    #pymarc['_id'] = jmarc['_id']
     pymarc['leader'] = jmarc['leader']
     pymarc['fields'] = []
 
-    # jmarc doesn't seem to include a 001, so let's assign it if it doesn't already exist
-    pymarc['fields'].append({'001': pymarc['_id']})
+
 
     # Process the controlfield entries
     for cf in jmarc['controlfield']:
@@ -37,6 +37,13 @@ def make_json(jmarc):
             this_subfield[sf_code] = sf_val
             this_field[tag]['subfields'].append(this_subfield)
         pymarc['fields'].append(this_field)
+
+    # Some records had been missing 001, so I am checking and adding it if necessary
+    try:
+        this_001 = pymarc['fields']['001']
+        pass
+    except KeyError:
+        pymarc['fields'].append({'001': jmarc['_id']})
 
     # Let's see if we can make json, then read that into pymarc
     pymarc_json = json.dumps(pymarc)
