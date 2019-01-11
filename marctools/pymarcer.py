@@ -38,13 +38,6 @@ def make_json(jmarc):
             this_field[tag]['subfields'].append(this_subfield)
         pymarc['fields'].append(this_field)
 
-    # Some records had been missing 001, so I am checking and adding it if necessary
-    try:
-        this_001 = pymarc['fields']['001']
-        pass
-    except KeyError:
-        pymarc['fields'].append({'001': jmarc['_id']})
-
     # Let's see if we can make json, then read that into pymarc
     pymarc_json = json.dumps(pymarc)
     return pymarc_json
