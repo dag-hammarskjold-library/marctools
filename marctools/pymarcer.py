@@ -86,7 +86,7 @@ def mijToJmarc(mij):
                     for i,j in sf.items():
                         tagSubfield={"code":i, "value":j}
                         tempSubfield.append(tagSubfield)
-                        tempDict["subfield"]=tempSubfield
+                    tempDict["subfield"]=tempSubfield
                 jMarc["datafield"].append(tempDict)
     "convert to string to return"
     strjMarc =json.dumps(jMarc)
