@@ -16,44 +16,89 @@ i.e. -> python jmarc.py "mongodb://..." 191 a S/2011/10
 '''
 
 import sys
-import json 
+import re
 import pymongo
 from pymongo import MongoClient
 from bson.son import SON
 
-class DLX:
+class DLX(object):
 	def __init__(self,connect_str):
 		client = MongoClient(connect_str)
 		self.db = client['undlFiles']
 		self.auths = self.db['auth_JMARC']
 		self.bibs = self.db['bib_JMARC']
 		self.files = self.db['files']
+
+class Subfield(object):
+	def __init__(self,sub):
+		self.code = sub['code']
+		self.value = sub['value']
+	
+class Controlfield(object):
+	def __init__(self,field):
+		self.tag = field['tag']
+		self.value = field['value']
+	
+class Datafield(object):
+	def __init__(self,field):
+		self.tag = field['tag']
+		self.ind1 = field['ind1']
+		self.ind2 = field['ind2']
+		self.subfield = list(map(lambda x: Subfield(x), field['subfield']))
 		
-class JMARC:
+	def get_value(self,code):
+		for sub in self.subfield:
+			if sub.code == code:
+				return sub.value
+
+	def get_values(self,*codes):
+		ret_vals = []
+		
+		for sub in self.subfield:
+			if sub.code in codes:
+				ret_vals.append(sub.value)
+		
+		return ret_vals
+		
+class JMARC(object):
 	def __init__(self,doc):
-		self.data = doc
-			
+		self.id = doc['_id']
+		self.leader = doc['leader']
+		self.controlfield = list(map(lambda x: Controlfield(x), doc['controlfield']))
+		self.datafield = list(map(lambda x: Datafield(x), doc['datafield']))
+		
 	def get_fields(self,tag):
-		return filter(lambda x: True if x.get('tag') == tag else False, self.data['datafield'])
+		return filter(lambda x: True if x.tag == tag else False, self.datafield)
+		
+	def get_field(self,tag):
+		return next(self.get_fields(tag), None)
 		
 	def get_value(self,tag,code):
 		# returns the first value found
 		
-		df = next(self.get_fields(tag), None)
+		field = self.get_field(tag)
 		
-		for sub in df['subfield']:
-			return sub['value']
+		if field.__class__.__name__ == 'Controlfield':
+			return field.value
+		
+		return field.get_value(code)
 
-	def get_values(self,tag,code):
+	def get_values(self,tag,*codes):
 		# returns list of values
-		
+	
 		ret_vals = []
 		
-		for df in self.get_fields(tag):
-			for sub in df['subfield']:
-				ret_vals.append(sub['value'])
+		for field in self.get_fields(tag):
+			vals = field.get_values(*codes)
+			if not vals:
+				pass
+			else:
+				ret_vals.append(field.get_values(*codes))
 		
-		return ret_vals
+		# this is the onyl way to flatten a list in python?? 😕
+		return [x for y in ret_vals for x in y]
+		
+####
 
 def match_subfield_value(tag,code,val):
 	# this would normally be imported from a library of utilites
@@ -90,8 +135,8 @@ def main():
 	jmarc = JMARC(doc)
 	
 	# prints title
-	print(jmarc.get_value('245','a'))
-
+	print(list(jmarc.get_values('245','a','b','c')))
+	
 ####
 	
 main()
