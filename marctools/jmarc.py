@@ -39,7 +39,6 @@ class Subfield(object):
 
 	def to_bson(self):
 		return SON(data = {'code' : self.code, 'value' : self.value})
-		
 
 class Controlfield(object):
 	def __init__(self,field):
@@ -79,16 +78,19 @@ class Datafield(object):
 				'subfield' : list(map(lambda x: x.to_bson(), self.subfield))
 			}
 		)
-
-
 	
 class JMARC(object):
 	def __init__(self,doc):
 		self.id = doc['_id']
 		self.leader = doc['leader']
+		# not sure why list comprehensions don't work here 
+		#self.controlfield = [Controlfield(x) for x in doc['controlfield']]
+		#self.datafield = [Datafield(x) for x in doc['controlfield']]
 		self.controlfield = list(map(lambda x: Controlfield(x), doc['controlfield']))
 		self.datafield = list(map(lambda x: Datafield(x), doc['datafield']))
-		
+
+	# accessors
+	
 	def get_fields(self, tag = None):
 		if tag is None:
 			return self.controlfield + self.datafield
@@ -97,7 +99,7 @@ class JMARC(object):
 	def get_field(self,tag):
 		return next(self.get_fields(tag), None)
 		
-	def get_value(self,tag,code):
+	def get_value(self,tag,code = None):
 		# returns the first value found
 		
 		field = self.get_field(tag)
@@ -122,6 +124,17 @@ class JMARC(object):
 		# this is the only way to flatten a list in python?? 😕
 		return [x for y in ret_vals for x in y]
 		
+	def tags(self):
+		# trying list comprehension instead of map
+		return [x.tag for x in self.get_fields()]
+	
+	# utlities 
+	
+	def diff(self,jmarc):
+		pass
+	
+	# serializations
+	
 	def to_bson(self):
 		return SON (
 			data = {
@@ -185,24 +198,7 @@ def match_subfield_value(tag,code,val):
 		}
 	)
 		
-def main():
-	connect_str = sys.argv[1]
-	tag = sys.argv[2]
-	code = sys.argv[3]
-	val = sys.argv[4]
-	
-	dlx = DLX(connect_str)
-	
-	query = match_subfield_value(tag,code,val)
-	
-	doc = dlx.bibs.find_one(query)
-	
-	if doc is None:
-		print('no results :(')
-		return
-	
-	jmarc = JMARC(doc)
-	
+def test(jmarc):
 	# prints title
 	print('Title: ' + ' '.join(jmarc.get_values('245','a','b','c')))
 	
@@ -232,6 +228,28 @@ def main():
 	# prints marc21 in utf8 (because its in utf8 in DLX)
 	# 	how to print as marc8??? 
 	print(pymarc_record.as_marc21())
+		
+def main():
+	connect_str = sys.argv[1]
+	tag = sys.argv[2]
+	code = sys.argv[3]
+	val = sys.argv[4]
+	
+	dlx = DLX(connect_str)
+	
+	query = match_subfield_value(tag,code,val)
+	
+	cursor = dlx.bibs.find(query)
+	
+	if cursor is None:
+		print('no results :(')
+		return
+	
+	for doc in cursor:
+		jmarc = JMARC(doc)
+	
+		print(jmarc.get_value('001'))
+
 	
 ####
 	
