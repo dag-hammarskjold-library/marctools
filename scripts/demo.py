@@ -9,18 +9,18 @@ i.e. -> python jmarc.py "mongodb://..." 191 a S/2011/10
 
 import sys
 '''
-sys.path holds the dirs that Python looks in to find modules to load. sys.path[0] holds.
+sys.path holds the dirs that Python looks in to find modules to load.
 sys.path[0] is the directory the script is run from. 
 '''
-sys.path[0] = sys.path[0] + '\..'
+sys.path[0] = sys.path[ 0] + '\..'
 
 from marctools.jmarc import JMARC
 from marctools.dlx import DB
 from marctools.queries import *
 
-#import .marctools
-
 def test(jmarc):
+	print('\n')
+	
 	# prints title
 	print('Title: ' + ' '.join(jmarc.get_values('245','a','b','c')))
 	
@@ -50,6 +50,10 @@ def test(jmarc):
 	# prints marc21 in utf8 (because its in utf8 in DLX)
 	# 	how to print as marc8??? 
 	print(pymarc_record.as_marc21())
+	
+	print('_' * 100)
+	
+	input('press any key for next record')
 		
 
 def run():
@@ -72,8 +76,9 @@ def run():
 	
 	for doc in cursor:
 		jmarc = JMARC(doc)
-	
-		print(jmarc.get_value('001'))
+		
+		test(jmarc)
+		
 
 	
 ####
