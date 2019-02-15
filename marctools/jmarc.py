@@ -156,5 +156,6 @@ class JMARC(object):
 		reader = JSONReader(self.to_mij())
 		
 		for r in reader:
+			r.force_utf8 = True
 			return r
 
